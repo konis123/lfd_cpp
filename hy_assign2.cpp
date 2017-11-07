@@ -20,7 +20,7 @@ vector<Point2f> corners;
 double vanishingLine;	//소실점 위치
 double pa;	//1도당 나타내는 픽셀수. 체스판한칸*8은 바닥에서 체스판가운데까지의 픽셀수
 double img_height, img_width;
-double objLine;
+//double objLine;
 double b2c;
 
 BASE_INFO readData() {
@@ -85,6 +85,23 @@ void showLane(Mat img, double carWidth, double dis1, double dis2) {
 	line(img, dis1_point1, dis2_point1, Scalar(255, 0, 0), 5);
 	line(img, dis1_point2, dis2_point2, Scalar(255, 0, 0), 5);
 
+}
+
+void showHorizontalLane(Mat img, double carWidth, double objLine) {
+
+	double tempWidth = carWidth / 2;	//중앙에서 부터의 가로길이
+
+	double pd = (8 * b.CHESS_SPACE) / (corners[44].x - corners[37].x);	//체스판에서의 픽셀당 센치
+
+
+	double newpd1 = b2c / (objLine - vanishingLine)*pd;	//클릭한곳에서의 픽셀당 센치미터
+	double temp1 = tempWidth / newpd1;	//objLine에서 차폭의 반정도의 크기를 갖는 포인트
+
+	Point obj_point1 = { int(img_width / 2 + temp1), (int)objLine };
+	Point obj_point2 = { int(img_width / 2 - temp1), (int)objLine };
+
+	line(img, obj_point1, obj_point2, Scalar(50, 100, 20), 5);
+
 
 
 }
@@ -135,7 +152,7 @@ double getObjectLine(double obj) {
 	b2c = getVanishingLine2Chess();
 
 	//구하고자하는 라인의 x픽셀 위치
-	objLine = vanishingLine + oAngle*pa;
+	double objLine = vanishingLine + oAngle*pa;
 	//line(img, Point(0, int(objLine)), Point(img_width, int(objLine)), Scalar(0, 0, 255), 5);
 
 
@@ -208,6 +225,8 @@ int main() {
 
 	//쇼레인
 	showLane(img, 180, getObjectLine(10), vanishingLine);	//차폭 : 180
+	//수직으로 180만큼 보여주는거 
+	showHorizontalLane(img, 180, getObjectLine(obj));
 
 	//이미지 띄우기
 	cvNamedWindow("window");
