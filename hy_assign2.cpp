@@ -9,7 +9,7 @@
 //체스보드가 짝수X짝수 크기면됨
 #define W_CORNERS 5	//15 홀수
 #define H_CORNERS 7		//5 홀수
-
+#define CAR_WIDTH 180
 
 using namespace std;
 using namespace cv;
@@ -22,10 +22,12 @@ typedef struct {
 BASE_INFO b;
 vector<Point2f> corners;
 double vanishingLine;	//소실점 위치
-double pa;	//1도당 나타내는 픽셀수. 체스판한칸*8은 바닥에서 체스판가운데까지의 픽셀수
 double img_height, img_width;
 //double objLine;
 double b2c;
+double CHESS_SPACE_PIXEL;
+double tempDistance;
+Mat img;
 
 BASE_INFO readData() {
 
@@ -54,41 +56,58 @@ BASE_INFO readData() {
 }
 
 int getVanishingLine2Chess() {
-
+	/*
 	double cuTheta = atan(b.CAMERA_HEIGHT / b.CAMERATOCHESS);
 	double cuAngle = cuTheta * 180 / PI;
-	//double chess_under = vanishingLine + oAngle*pa;
-
-	//return chess_under - vanishingLine;
+	
 	return cuAngle*pa;
+	*/
+	
+	double temp = corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].y + CHESS_SPACE_PIXEL -vanishingLine;
+	//line(img, Point(0, temp), Point(1000, temp), Scalar(255, 255, 0), 5);
+
+	return temp;
+}
+
+double getObjectLine(double obj) {
+
+	//체스보드를 이용해서 소실선의 픽셀위치(vanishingLine)를 찾음
+	CHESS_SPACE_PIXEL = abs(corners[0 + W_CORNERS].y - corners[0].y);
+	double a = (b.CAMERA_HEIGHT - b.CHESS_HEIGHT) / b.CHESS_SPACE;
+	vanishingLine = corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].y - CHESS_SPACE_PIXEL*(a - 1.0);
+	//line(img, Point(0, int(vanishingLine)), Point(img_width, int(vanishingLine)), Scalar(255, 0, 0), 5);
+	//circle(img, Point(corners[67].x, int(vanishingLine)), 10, Scalar(0, 255, 0), 5);
+
+	//소실선에서 체스판바닥있는데까지의 픽셀거리 구하기
+	b2c = getVanishingLine2Chess();
+
+
+	tempDistance = (b.CAMERATOCHESS*b.CHESS_HEIGHT) / (b.CAMERA_HEIGHT - b.CHESS_HEIGHT);
+	double cAnlge = atan(b.CAMERA_HEIGHT / (tempDistance + b.CAMERATOCHESS)) * 180 / PI;
+	double pa = b2c / cAnlge;
+
+	double oAngle = atan(b.CAMERA_HEIGHT / (obj+b.CAMERATOBONNET)) * 180 / PI;
+	double objLine = vanishingLine + oAngle*pa;
+
+	return objLine;
+
+	
 }
 
 void showLane(Mat img, double carWidth, double dis1, double dis2) {
 
 	double tempWidth = carWidth / 2;	//중앙에서 부터의 가로길이
 
-	//double pd = ((W_CORNERS + 1) / 2 * b.CHESS_SPACE) / (corners[W_CORNERS*H_CORNERS-(W_CORNERS/2)-1].x - corners[(W_CORNERS/2)+W_CORNERS-1].x);	//체스판에서의 픽셀당 센치
-	double pd = ((W_CORNERS-1) * b.CHESS_SPACE) / (corners[W_CORNERS-1].x - corners[0].x);	//체스판에서의 픽셀당 센치
+	int tempOne = int(getObjectLine(b.BONNETTOCHESS));
+	double pd = (CHESS_SPACE_PIXEL / b.CHESS_SPACE);
+	//line(img, Point(int(img_width / 2 + pd*tempWidth), 300), Point(int(img_width / 2 - pd*tempWidth), 300), Scalar(0, 255, 0), 5);
 
+	Point vPoint = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x), int(vanishingLine) };
+	Point p1 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x + pd*tempWidth), tempOne };
+	Point p2 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x - pd*tempWidth), tempOne };
 
-	double newpd1 = b2c / (dis1 - vanishingLine)*pd;	//클릭한곳에서의 픽셀당 센치미터
-	double temp1 = tempWidth / newpd1;	//objLine에서 차폭의 반정도의 크기를 갖는 포인트
-
-	Point dis1_point1 = { int(img_width / 2 + temp1), (int)dis1 };
-	Point dis1_point2 = { int(img_width / 2 - temp1), (int)dis1 };
-
-
-	double newpd2 = b2c / (dis2 - vanishingLine)*pd;	//클릭한곳에서의 픽셀당 센치미터
-	double temp2 = tempWidth / newpd2;	//objLine에서 차폭의 반정도의 크기를 갖는 포인트
-
-	Point dis2_point1 = { int(img_width / 2 + temp2), (int)dis2 };
-	Point dis2_point2 = { int(img_width / 2 - temp2), (int)dis2 };
-
-	//circle(img, Point(img_width / 2 + objPoint, int(objLine)), 10, Scalar(128, 128, 0), 5);
-	//circle(img, Point(img_width / 2 - objPoint, int(objLine)), 10, Scalar(128, 128, 0), 5);
-
-	line(img, dis1_point1, dis2_point1, Scalar(255, 0, 0), 5);
-	line(img, dis1_point2, dis2_point2, Scalar(255, 0, 0), 5);
+	line(img, vPoint, p1, Scalar(255, 0, 0), 5);
+	line(img, vPoint, p2, Scalar(255, 0, 0), 5);
 
 }
 
@@ -105,12 +124,47 @@ void showHorizontalLane(Mat img, double carWidth, double objLine) {
 	Point obj_point1 = { int(img_width / 2 + temp1), (int)objLine };
 	Point obj_point2 = { int(img_width / 2 - temp1), (int)objLine };
 
+	//cout << obj_point1 << endl;
+	//cout << obj_point2 << endl;
+
 	line(img, obj_point1, obj_point2, Scalar(50, 100, 20), 5);
-
-
 
 }
 
+void showHorizontalLane2(Mat img, double carWidth) {
+
+	double tempWidth = carWidth / 2;	//중앙에서 부터의 가로길이
+	double objLine1 = getObjectLine(500);
+	double objLine2 = getObjectLine(800);
+
+	double pd = (CHESS_SPACE_PIXEL / b.CHESS_SPACE);
+
+	double newpd1 = b2c / (objLine1 - vanishingLine)*pd;	//클릭한곳에서의 픽셀당 센치미터
+	double temp1 = tempWidth / newpd1;	//objLine에서 차폭의 반정도의 크기를 갖는 포인트
+
+	//Point p1 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x + pd*tempWidth), tempOne };
+	Point obj_point1 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x + pd*tempWidth), (int)objLine1 };
+	Point obj_point2 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x - pd*tempWidth), (int)objLine1 };
+
+	double newpd2 = b2c / (objLine2 - vanishingLine)*pd;	//클릭한곳에서의 픽셀당 센치미터
+	double temp2 = tempWidth / newpd2;	//objLine에서 차폭의 반정도의 크기를 갖는 포인트
+
+	Point obj_point3 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x + pd*tempWidth), (int)objLine2 };
+	Point obj_point4 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x - pd*tempWidth), (int)objLine2 };
+
+	cout << "5m" << endl;
+	cout << obj_point1 << endl;
+	cout << obj_point2 << endl;
+	cout << "8m" << endl;
+	cout << obj_point3 << endl;
+	cout << obj_point4 << endl;
+
+	line(img, obj_point1, obj_point2, Scalar(128, 0, 255), 5);
+	line(img, obj_point3, obj_point4, Scalar(0, 0, 255), 5);
+
+
+}
+/*
 void onMouse(int event, int x, int y, int flags, void* userdata) {
 
 	if (event == EVENT_LBUTTONDOWN) {
@@ -128,42 +182,8 @@ void onMouse(int event, int x, int y, int flags, void* userdata) {
 		cout << x << "," << y;
 	}
 
-}
-
-
-
-double getObjectLine(double obj) {
-
-	//체스보드를 이용해서 소실선의 픽셀위치(vanishingLine)를 찾음
-	double CHESS_SPACE_PIXEL = abs(corners[0+W_CORNERS].y - corners[0].y);
-	double a = (b.CAMERA_HEIGHT - b.CHESS_HEIGHT) / b.CHESS_SPACE;
-	vanishingLine = corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].y - CHESS_SPACE_PIXEL*(a - 1.0);
-	//line(img, Point(0, int(vanishingLine)), Point(img_width, int(vanishingLine)), Scalar(255, 0, 0), 5);
-	//circle(img, Point(corners[67].x, int(vanishingLine)), 10, Scalar(0, 255, 0), 5);
-
-	//체스보드와 카메라와의 각도 cTheta
-	double cTheta = atan((b.CAMERA_HEIGHT - b.CHESS_HEIGHT) / b.CAMERATOCHESS);
-	double cAngle = cTheta * 180.0 / PI;
-	cout << "체스보드와 카메라와의 각도 : " << cAngle << "도\n";
-
-	//1도당 나타내는 픽셀수. 체스판한칸*8은 바닥에서 체스판가운데까지의 픽셀수
-	pa = (corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].y + CHESS_SPACE_PIXEL - vanishingLine) / cAngle;
-
-	//input으로 받은 값과 소실점의 픽셀거리 차이구하기
-	double oTheta = atan(b.CAMERA_HEIGHT / obj);
-	double oAngle = oTheta * 180.0 / PI;
-	cout << "구하고자하는 거리와 카메라와의 각도 : " << oAngle << "도\n";
-
-	//소실선에서 체스판바닥있는데까지의 픽셀거리 구하기
-	b2c = getVanishingLine2Chess();
-
-	//구하고자하는 라인의 x픽셀 위치
-	double objLine = vanishingLine + oAngle*pa;
-	//line(img, Point(0, int(objLine)), Point(img_width, int(objLine)), Scalar(0, 0, 255), 5);
-
-
-	return objLine;
-}
+}	
+*/
 
 int main() {
 
@@ -177,7 +197,7 @@ int main() {
 	cin >> imgFilePath;
 
 	//Mat img = imread(imgFilePath);
-	Mat img = imread("./calibration_new.jpg");
+	img = imread("./calibration.jpg");
 	if (!img.data) {
 		cout << "이미지 읽기 실패\n";
 		return -1;
@@ -200,17 +220,19 @@ int main() {
 	}
 
 	//쇼레인
-	showLane(img, 180, getObjectLine(10), vanishingLine);	//차폭 : 180
+	showLane(img, CAR_WIDTH, getObjectLine(0), vanishingLine);	//차폭 : 180
 
 	//수직으로 180만큼 보여주는거 
-	showHorizontalLane(img, 180, getObjectLine(obj));
+	//showHorizontalLane(img, 180, getObjectLine(obj));
+	showHorizontalLane2(img, CAR_WIDTH);//5m,8m 라인그리기
+
 
 	//이미지 띄우기
 	cvNamedWindow("window");
 	imshow("window", img);
 
 	//마우스 콜백 등록
-	setMouseCallback("window", onMouse, NULL);
+	//setMouseCallback("window", onMouse, NULL);
 
 	cvWaitKey(0);
 	cvDestroyAllWindows();
