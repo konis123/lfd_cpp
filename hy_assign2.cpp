@@ -9,13 +9,13 @@
 //체스보드가 짝수X짝수 크기면됨
 #define W_CORNERS 5	//15 홀수
 #define H_CORNERS 7		//5 홀수
-#define CAR_WIDTH 180
+//#define CAR_WIDTH 180
 
 using namespace std;
 using namespace cv;
 
 typedef struct {
-	double CAMERA_HEIGHT, CAMERATOBONNET, BONNETTOCHESS, CHESS_SPACE, CHESS_HEIGHT;
+	double CAMERA_HEIGHT, CAMERATOBONNET, BONNETTOCHESS, CHESS_SPACE, CHESS_HEIGHT, CAR_WIDTH;
 	double CAMERATOCHESS;
 }BASE_INFO;
 
@@ -26,6 +26,7 @@ double img_height, img_width;
 //double objLine;
 double b2c;
 double CHESS_SPACE_PIXEL;
+double CHESS_SPACE_PIXEL_X;
 double tempDistance;
 Mat img;
 
@@ -33,12 +34,12 @@ BASE_INFO readData() {
 
 	BASE_INFO b;
 	string temp;
-	double a[5];
+	double a[6];
 
 	ifstream in("./data.txt");
 
 	if (in.is_open()) {
-		for(int i=0;i<5;i++){
+		for(int i=0;i<6;i++){
 			getline(in, temp);
 			double pos = temp.find('=');
 			a[i] = atoi(temp.substr(pos+1, 10).c_str());
@@ -50,6 +51,7 @@ BASE_INFO readData() {
 	b.BONNETTOCHESS = a[2];
 	b.CHESS_SPACE = a[3];
 	b.CHESS_HEIGHT = a[4];
+	b.CAR_WIDTH = a[5];
 	b.CAMERATOCHESS = b.CAMERATOBONNET + b.BONNETTOCHESS;
 
 	return b;
@@ -68,6 +70,7 @@ double getObjectLine(double obj) {
 
 	//체스보드를 이용해서 소실선의 픽셀위치(vanishingLine)를 찾음
 	CHESS_SPACE_PIXEL = abs(corners[0 + W_CORNERS].y - corners[0].y);
+
 	double a = (b.CAMERA_HEIGHT - b.CHESS_HEIGHT) / b.CHESS_SPACE;
 	vanishingLine = corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].y - CHESS_SPACE_PIXEL*(a - 1.0);
 
@@ -100,8 +103,27 @@ void showLane(Mat img, double carWidth, double dis1, double dis2) {
 
 	double tempWidth = carWidth / 2;	//중앙에서 부터의 가로길이
 
-	int tempOne = int(getObjectLine(b.BONNETTOCHESS));
-	double pd = (CHESS_SPACE_PIXEL / b.CHESS_SPACE);
+	double F = b.BONNETTOCHESS*CHESS_SPACE_PIXEL / b.CHESS_SPACE;
+	double P = F*b.CAR_WIDTH / 500;
+
+	int bP = int(P / 2);
+
+	Point vPoint = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x), int(vanishingLine) };
+	Point p1 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x + bP), int(getObjectLine(500)) };
+	Point p2 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x - bP), int(getObjectLine(500)) };
+
+	line(img, vPoint, p1, Scalar(255, 0, 0), 5);
+	line(img, vPoint, p2, Scalar(255, 0, 0), 5);
+
+	cout << "5m" << endl;
+	cout << p1 << endl;
+	cout << p2 << endl;
+
+	/*
+	CHESS_SPACE_PIXEL_X = abs(corners[1].x - corners[0].x);
+
+	int tempOne = int(getObjectLine(b.CAMERATOCHESS *b.CAMERATOCHESS / sqrt(b.CAMERA_HEIGHT*b.CAMERA_HEIGHT + b.CAMERATOCHESS*b.CAMERATOCHESS)));
+	double pd = (CHESS_SPACE_PIXEL_X / b.CHESS_SPACE);// *b.BONNETTOCHESS / sqrt(b.CAMERA_HEIGHT*b.CAMERA_HEIGHT + b.BONNETTOCHESS*b.BONNETTOCHESS);
 
 	Point vPoint = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x), int(vanishingLine) };
 	Point p1 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x + pd*tempWidth), tempOne };
@@ -109,7 +131,7 @@ void showLane(Mat img, double carWidth, double dis1, double dis2) {
 
 	line(img, vPoint, p1, Scalar(255, 0, 0), 5);
 	line(img, vPoint, p2, Scalar(255, 0, 0), 5);
-
+	*/
 }
 
 
@@ -124,6 +146,9 @@ void showHorizontalLane(Mat img, double carWidth, double objLine) {
 
 	Point obj_point1 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x + pd*tempWidth*((objLine - vanishingLine) / (tempOne - vanishingLine))), (int)objLine };
 	Point obj_point2 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x - pd*tempWidth*((objLine - vanishingLine) / (tempOne - vanishingLine))), (int)objLine };
+
+	cout << "소실선y"<<vanishingLine << endl;
+	cout << "";
 
 	line(img, obj_point1, obj_point2, Scalar(0, 255, 0), 5);
 
@@ -141,18 +166,37 @@ void showHorizontalLane2(Mat img, double carWidth) {
 
 	int tempOne = int(getObjectLine(b.BONNETTOCHESS));
 
+	double F1 = b.BONNETTOCHESS*CHESS_SPACE_PIXEL / b.CHESS_SPACE;
+	double P1 = F1*b.CAR_WIDTH / 500;
+	int bP1 = int(P1 / 2);
+
+	double F2 = b.BONNETTOCHESS*CHESS_SPACE_PIXEL / b.CHESS_SPACE;
+	double P2 = F2*b.CAR_WIDTH / 800;
+	int bP2 = int(P2 / 2);
+
+	Point obj_point1 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x + bP1), (int)objLine1 };
+	Point obj_point2 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x - bP1), (int)objLine1 };
+
+	Point obj_point3 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x + bP2), (int)objLine2 };
+	Point obj_point4 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x - bP2), (int)objLine2 };
+
+
+
+	/*
 	Point obj_point1 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x + pd*tempWidth*((objLine1 - vanishingLine) / (tempOne - vanishingLine))), (int)objLine1 };
 	Point obj_point2 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x - pd*tempWidth*((objLine1 - vanishingLine) / (tempOne - vanishingLine))), (int)objLine1 };
 
 	Point obj_point3 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x + pd*tempWidth*((objLine2 - vanishingLine) / (tempOne - vanishingLine))), (int)objLine2 };
 	Point obj_point4 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x - pd*tempWidth*((objLine2 - vanishingLine) / (tempOne - vanishingLine))), (int)objLine2 };
-
+	
+	
 	cout << "5m" << endl;
 	cout << obj_point1 << endl;
 	cout << obj_point2 << endl;
 	cout << "8m" << endl;
 	cout << obj_point3 << endl;
 	cout << obj_point4 << endl;
+	*/
 
 	line(img, obj_point1, obj_point2, Scalar(0, 0, 255), 5);
 	line(img, obj_point3, obj_point4, Scalar(0, 0, 255), 5);
@@ -216,11 +260,11 @@ int main() {
 	}
 
 	//쇼레인
-	showLane(img, CAR_WIDTH, getObjectLine(0), vanishingLine);	//차폭 : 180
+	showLane(img, b.CAR_WIDTH, getObjectLine(0), vanishingLine);	//차폭 : 180
 
 	//수직으로 180만큼 보여주는거 
 	showHorizontalLane(img, 180, getObjectLine(obj));	//입력한 거리의 라인구하기
-	showHorizontalLane2(img, CAR_WIDTH);//5m,8m 라인그리기
+	showHorizontalLane2(img, b.CAR_WIDTH);//5m,8m 라인그리기
 
 
 	//이미지 띄우기
