@@ -65,6 +65,30 @@ int getVanishingLine2Chess() {
 	return temp;
 }
 
+Point getIntersectPoint(Point AP1, Point AP2, Point BP1, Point BP2)
+{
+	Point IP;
+	double t;
+	double s;
+	double under = (BP2.y - BP1.y)*(AP2.x - AP1.x) - (BP2.x - BP1.x)*(AP2.y - AP1.y);
+	if (under == 0) return false;
+
+	double _t = (BP2.x - BP1.x)*(AP1.y - BP1.y) - (BP2.y - BP1.y)*(AP1.x - BP1.x);
+	double _s = (AP2.x - AP1.x)*(AP1.y - BP1.y) - (AP2.y - AP1.y)*(AP1.x - BP1.x);
+
+
+	t = _t / under;
+	s = _s / under;
+
+	if (t<0.0 || t>1.0 || s<0.0 || s>1.0) return false;
+	if (_t == 0 && _s == 0) return false;
+
+	IP.x = AP1.x + t * (double)(AP2.x - AP1.x);
+	IP.y = AP1.y + t * (double)(AP2.y - AP1.y);
+
+	return IP;
+}
+
 //매개변수로 구하고자하는 거리(ex: 5m이면 500, 8m이면 800)를 입력받아서 해당위치에 해당하는 y좌표 픽셀위치 반환하는 함수
 double getObjectLine(double obj) {
 
@@ -82,7 +106,7 @@ double getObjectLine(double obj) {
 
 	//위의 tempDistance 와 카메라의 degree 구하기
 	double cAnlge = atan(b.CAMERA_HEIGHT / (tempDistance + b.CAMERATOCHESS)) * 180 / PI;
-
+	
 	//degree당 픽셀수 구하기
 	double pa = b2c / cAnlge;
 
@@ -92,6 +116,8 @@ double getObjectLine(double obj) {
 	//구하고자하는 거리의 y좌표 픽셀구하기
 	double objLine = vanishingLine + oAngle*pa;
 
+	//cout << obj << " : " << oAngle << endl;
+
 	return objLine;
 
 	
@@ -99,12 +125,11 @@ double getObjectLine(double obj) {
 
 //이미지, 차폭, 거리1, 거리2 입력받아서 거리1~거리2 까지 차폭만큼 라인표시하는거 (||요런 모양으로)
 //이미지에 파랑색으로 표시
-void showLane(Mat img, double carWidth, double dis1, double dis2) {
-
-	double tempWidth = carWidth / 2;	//중앙에서 부터의 가로길이
-
-	double F = b.BONNETTOCHESS*CHESS_SPACE_PIXEL / b.CHESS_SPACE;
-	double P = F*b.CAR_WIDTH / 500;
+void showLane(Mat img, double dis1, double dis2) {
+	
+	/*
+	double F = b.CAMERATOCHESS*CHESS_SPACE_PIXEL / b.CHESS_SPACE;
+	double P = F*b.CAR_WIDTH / 500;// * img_height / img_width;
 
 	int bP = int(P / 2);
 
@@ -118,37 +143,74 @@ void showLane(Mat img, double carWidth, double dis1, double dis2) {
 	cout << "5m" << endl;
 	cout << p1 << endl;
 	cout << p2 << endl;
+	*/
 
-	/*
-	CHESS_SPACE_PIXEL_X = abs(corners[1].x - corners[0].x);
-
-	int tempOne = int(getObjectLine(b.CAMERATOCHESS *b.CAMERATOCHESS / sqrt(b.CAMERA_HEIGHT*b.CAMERA_HEIGHT + b.CAMERATOCHESS*b.CAMERATOCHESS)));
-	double pd = (CHESS_SPACE_PIXEL_X / b.CHESS_SPACE);// *b.BONNETTOCHESS / sqrt(b.CAMERA_HEIGHT*b.CAMERA_HEIGHT + b.BONNETTOCHESS*b.BONNETTOCHESS);
+	
+	double a = b.BONNETTOCHESS;
+	double b = getObjectLine(int(a));
 
 	Point vPoint = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x), int(vanishingLine) };
-	Point p1 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x + pd*tempWidth), tempOne };
-	Point p2 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x - pd*tempWidth), tempOne };
+	Point p1 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x + CHESS_SPACE_PIXEL*15), int(b) };
+	Point p2 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x - CHESS_SPACE_PIXEL*15), int(b) };
 
 	line(img, vPoint, p1, Scalar(255, 0, 0), 5);
 	line(img, vPoint, p2, Scalar(255, 0, 0), 5);
+
+	double five = getObjectLine(500);
+	double eight = getObjectLine(800);
+
+	//이게 5,8m 에서 차폭에 맞는 포인트들임
+	Point temp1 = getIntersectPoint(Point(0, five), Point(img_width, five), vPoint, p1);
+	Point temp2 = getIntersectPoint(Point(0, five), Point(img_width, five), vPoint, p2);
+
+	Point temp3 = getIntersectPoint(Point(0, eight), Point(img_width, eight), vPoint, p1);
+	Point temp4 = getIntersectPoint(Point(0, eight), Point(img_width, eight), vPoint, p2);
+
+
+	circle(img, temp1, 5, Scalar(128,192,45), 3);
+	circle(img, temp2, 5, Scalar(128, 192, 45), 3);
+	circle(img, temp3, 5, Scalar(128, 192, 45), 3);
+	circle(img, temp4, 5, Scalar(128, 192, 45), 3);
+
+
+
+	/*
+	double tempWidth = b.CAR_WIDTH / 2;	//중앙에서 부터의 가로길이
+
+	double pd = (CHESS_SPACE_PIXEL / b.CHESS_SPACE);	//센치미터당 픽셀수
+	int tempOne = int(getObjectLine(b.BONNETTOCHESS));
+
+	Point obj_point1 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x + pd*tempWidth*((500 - vanishingLine) / (tempOne - vanishingLine))), (int)500 };
+	Point obj_point2 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x - pd*tempWidth*((500 - vanishingLine) / (tempOne - vanishingLine))), (int)500 };
+
+	Point obj_point3 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x + pd*tempWidth*((800 - vanishingLine) / (tempOne - vanishingLine))), (int)800 };
+	Point obj_point4 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x - pd*tempWidth*((800 - vanishingLine) / (tempOne - vanishingLine))), (int)800 };
+
+
+	cout << "소실선y" << vanishingLine << endl;
+	cout << "";
+
+	Point vPoint = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x), int(vanishingLine) };
+
+
+	line(img, vPoint, obj_point3, Scalar(0, 255, 0), 5);
+	line(img, vPoint, obj_point4, Scalar(0, 255, 0), 5);
 	*/
+
+
 }
 
 
 //콘솔창에서 표시하고자하는 거리 입력받은거 수직방향으로 픽셀위치 표시하는거
 //이미지에 초록색으로 그림
-void showHorizontalLane(Mat img, double carWidth, double objLine) {
-
-	double tempWidth = carWidth / 2;	//중앙에서 부터의 가로길이
+void showHorizontalLane(Mat img, double objLine) {
 
 	double pd = (CHESS_SPACE_PIXEL / b.CHESS_SPACE);	//센치미터당 픽셀수
 	int tempOne = int(getObjectLine(b.BONNETTOCHESS));
 
-	Point obj_point1 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x + pd*tempWidth*((objLine - vanishingLine) / (tempOne - vanishingLine))), (int)objLine };
-	Point obj_point2 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x - pd*tempWidth*((objLine - vanishingLine) / (tempOne - vanishingLine))), (int)objLine };
+	Point obj_point1 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x + pd*(b.CAR_WIDTH/2)*((objLine - vanishingLine) / (tempOne - vanishingLine))), (int)objLine };
+	Point obj_point2 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x - pd*(b.CAR_WIDTH/2)*((objLine - vanishingLine) / (tempOne - vanishingLine))), (int)objLine };
 
-	cout << "소실선y"<<vanishingLine << endl;
-	cout << "";
 
 	line(img, obj_point1, obj_point2, Scalar(0, 255, 0), 5);
 
@@ -156,9 +218,8 @@ void showHorizontalLane(Mat img, double carWidth, double objLine) {
 
 //5m와 8m거리를 수직방향으로 표시한거
 //이미지에 빨강색으로 그림
-void showHorizontalLane2(Mat img, double carWidth) {
-
-	double tempWidth = carWidth / 2;	//중앙에서 부터의 가로길이
+void showHorizontalLane2(Mat img) {
+	/*
 	double objLine1 = getObjectLine(500);	//5m 거리의 픽셀좌표구하기
 	double objLine2 = getObjectLine(800);	//8m 거리의 픽셀좌표구하기
 
@@ -180,26 +241,27 @@ void showHorizontalLane2(Mat img, double carWidth) {
 	Point obj_point3 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x + bP2), (int)objLine2 };
 	Point obj_point4 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x - bP2), (int)objLine2 };
 
-
-
-	/*
-	Point obj_point1 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x + pd*tempWidth*((objLine1 - vanishingLine) / (tempOne - vanishingLine))), (int)objLine1 };
-	Point obj_point2 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x - pd*tempWidth*((objLine1 - vanishingLine) / (tempOne - vanishingLine))), (int)objLine1 };
-
-	Point obj_point3 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x + pd*tempWidth*((objLine2 - vanishingLine) / (tempOne - vanishingLine))), (int)objLine2 };
-	Point obj_point4 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x - pd*tempWidth*((objLine2 - vanishingLine) / (tempOne - vanishingLine))), (int)objLine2 };
-	
-	
-	cout << "5m" << endl;
-	cout << obj_point1 << endl;
-	cout << obj_point2 << endl;
-	cout << "8m" << endl;
-	cout << obj_point3 << endl;
-	cout << obj_point4 << endl;
 	*/
 
-	line(img, obj_point1, obj_point2, Scalar(0, 0, 255), 5);
-	line(img, obj_point3, obj_point4, Scalar(0, 0, 255), 5);
+	double a = b.BONNETTOCHESS;
+	double b = getObjectLine(int(a));
+
+	Point vPoint = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x), int(vanishingLine) };
+	Point p1 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x + CHESS_SPACE_PIXEL * 15), int(b) };
+	Point p2 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x - CHESS_SPACE_PIXEL * 15), int(b) };
+
+	double five = getObjectLine(500);
+	double eight = getObjectLine(800);
+
+	Point temp1 = getIntersectPoint(Point(0, five), Point(img_width, five), vPoint, p1);
+	Point temp2 = getIntersectPoint(Point(0, five), Point(img_width, five), vPoint, p2);
+
+	Point temp3 = getIntersectPoint(Point(0, eight), Point(img_width, eight), vPoint, p1);
+	Point temp4 = getIntersectPoint(Point(0, eight), Point(img_width, eight), vPoint, p2);
+	
+
+	line(img, temp1, temp2, Scalar(0, 0, 255), 5);
+	line(img, temp3, temp4, Scalar(0, 0, 255), 5);
 
 
 }
@@ -237,7 +299,7 @@ int main() {
 	cin >> imgFilePath;
 
 	//Mat img = imread(imgFilePath);
-	img = imread("./calibration.jpg");
+	img = imread("./calibration_tuscon_2m.jpg");
 	if (!img.data) {
 		cout << "이미지 읽기 실패\n";
 		return -1;
@@ -260,11 +322,11 @@ int main() {
 	}
 
 	//쇼레인
-	showLane(img, b.CAR_WIDTH, getObjectLine(0), vanishingLine);	//차폭 : 180
+	showLane(img, getObjectLine(0), vanishingLine);	//차폭 : 180
 
 	//수직으로 180만큼 보여주는거 
-	showHorizontalLane(img, 180, getObjectLine(obj));	//입력한 거리의 라인구하기
-	showHorizontalLane2(img, b.CAR_WIDTH);//5m,8m 라인그리기
+	showHorizontalLane(img, getObjectLine(obj));	//입력한 거리의 라인구하기
+	showHorizontalLane2(img);//5m,8m 라인그리기
 
 
 	//이미지 띄우기
