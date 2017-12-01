@@ -149,7 +149,7 @@ void showLane(Mat img, double dis1, double dis2) {
 	int aa = half_width / b.CHESS_SPACE;
 
 	Point vPoint = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x), int(vanishingLine) };
-	Point p1 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x + CHESS_SPACE_PIXEL*(b.CAMERATOCHESS/sqrt(b.CHESS_HEIGHT*b.CHESS_HEIGHT + b.CAMERATOCHESS*b.CAMERATOCHESS))*aa), int(a) };
+	Point p1 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x + CHESS_SPACE_PIXEL*(b.CAMERATOCHESS / sqrt(b.CHESS_HEIGHT*b.CHESS_HEIGHT + b.CAMERATOCHESS*b.CAMERATOCHESS))*aa), int(a) };
 	Point p2 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x - CHESS_SPACE_PIXEL*(b.CAMERATOCHESS / sqrt(b.CHESS_HEIGHT*b.CHESS_HEIGHT + b.CAMERATOCHESS*b.CAMERATOCHESS))*aa), int(a) };
 
 	line(img, vPoint, p1, Scalar(255, 0, 0), 5);
