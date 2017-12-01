@@ -207,8 +207,8 @@ void showHorizontalLane(Mat img, double objLine) {
 	double pd = (CHESS_SPACE_PIXEL / b.CHESS_SPACE);	//센치미터당 픽셀수
 	int tempOne = int(getObjectLine(b.BONNETTOCHESS));
 
-	Point obj_point1 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x + pd*(b.CAR_WIDTH/2)*((objLine - vanishingLine) / (tempOne - vanishingLine))), (int)objLine };
-	Point obj_point2 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x - pd*(b.CAR_WIDTH/2)*((objLine - vanishingLine) / (tempOne - vanishingLine))), (int)objLine };
+	Point obj_point1 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x + pd*(b.CAMERATOCHESS / sqrt(b.CHESS_HEIGHT*b.CHESS_HEIGHT + b.CAMERATOCHESS*b.CAMERATOCHESS))*(b.CAR_WIDTH/2)*((objLine - vanishingLine) / (tempOne - vanishingLine))), (int)objLine };
+	Point obj_point2 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x - pd*(b.CAMERATOCHESS / sqrt(b.CHESS_HEIGHT*b.CHESS_HEIGHT + b.CAMERATOCHESS*b.CAMERATOCHESS))*(b.CAR_WIDTH/2)*((objLine - vanishingLine) / (tempOne - vanishingLine))), (int)objLine };
 
 
 	line(img, obj_point1, obj_point2, Scalar(0, 255, 0), 5);
@@ -247,8 +247,8 @@ void showHorizontalLane2(Mat img) {
 	int aa = half_width / b.CHESS_SPACE;
 
 	Point vPoint = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x), int(vanishingLine) };
-	Point p1 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x + CHESS_SPACE_PIXEL * aa), int(a) };
-	Point p2 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x - CHESS_SPACE_PIXEL * aa), int(a) };
+	Point p1 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x + CHESS_SPACE_PIXEL*(b.CAMERATOCHESS / sqrt(b.CHESS_HEIGHT*b.CHESS_HEIGHT + b.CAMERATOCHESS*b.CAMERATOCHESS)) * aa), int(a) };
+	Point p2 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x - CHESS_SPACE_PIXEL*(b.CAMERATOCHESS / sqrt(b.CHESS_HEIGHT*b.CHESS_HEIGHT + b.CAMERATOCHESS*b.CAMERATOCHESS)) * aa), int(a) };
 
 	double five = getObjectLine(500);
 	double eight = getObjectLine(800);
