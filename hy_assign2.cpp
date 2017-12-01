@@ -9,7 +9,6 @@
 //체스보드가 짝수X짝수 크기면됨
 #define W_CORNERS 5	//15 홀수
 #define H_CORNERS 7		//5 홀수
-//#define CAR_WIDTH 180
 
 using namespace std;
 using namespace cv;
@@ -23,7 +22,6 @@ BASE_INFO b;
 vector<Point2f> corners;
 double vanishingLine;	//소실점 위치
 double img_height, img_width;
-//double objLine;
 double b2c;
 double CHESS_SPACE_PIXEL;
 double CHESS_SPACE_PIXEL_X;
@@ -116,7 +114,7 @@ double getObjectLine(double obj) {
 	//구하고자하는 거리의 y좌표 픽셀구하기
 	double objLine = vanishingLine + oAngle*pa;
 
-	//cout << obj << " : " << oAngle << endl;
+	cout << obj << "cm각도 : " << oAngle << endl;
 
 	return objLine;
 
@@ -146,12 +144,13 @@ void showLane(Mat img, double dis1, double dis2) {
 	*/
 
 	
-	double a = b.BONNETTOCHESS;
-	double b = getObjectLine(int(a));
+	double a = getObjectLine(int(b.BONNETTOCHESS));
+	int half_width = b.CAR_WIDTH / 2;
+	int aa = half_width / b.CHESS_SPACE;
 
 	Point vPoint = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x), int(vanishingLine) };
-	Point p1 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x + CHESS_SPACE_PIXEL*15), int(b) };
-	Point p2 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x - CHESS_SPACE_PIXEL*15), int(b) };
+	Point p1 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x + CHESS_SPACE_PIXEL*aa), int(a) };
+	Point p2 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x - CHESS_SPACE_PIXEL*aa), int(a) };
 
 	line(img, vPoint, p1, Scalar(255, 0, 0), 5);
 	line(img, vPoint, p2, Scalar(255, 0, 0), 5);
@@ -243,12 +242,13 @@ void showHorizontalLane2(Mat img) {
 
 	*/
 
-	double a = b.BONNETTOCHESS;
-	double b = getObjectLine(int(a));
+	double a = getObjectLine(int(b.BONNETTOCHESS));
+	int half_width = b.CAR_WIDTH / 2;
+	int aa = half_width / b.CHESS_SPACE;
 
 	Point vPoint = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x), int(vanishingLine) };
-	Point p1 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x + CHESS_SPACE_PIXEL * 15), int(b) };
-	Point p2 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x - CHESS_SPACE_PIXEL * 15), int(b) };
+	Point p1 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x + CHESS_SPACE_PIXEL * aa), int(a) };
+	Point p2 = { int(corners[W_CORNERS*H_CORNERS - (W_CORNERS / 2) - 1].x - CHESS_SPACE_PIXEL * aa), int(a) };
 
 	double five = getObjectLine(500);
 	double eight = getObjectLine(800);
@@ -299,7 +299,7 @@ int main() {
 	cin >> imgFilePath;
 
 	//Mat img = imread(imgFilePath);
-	img = imread("./calibration_tuscon_2m.jpg");
+	img = imread("./calibration.jpg");
 	if (!img.data) {
 		cout << "이미지 읽기 실패\n";
 		return -1;
